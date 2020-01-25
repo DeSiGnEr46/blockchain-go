@@ -87,6 +87,12 @@ func (s *SmartContract) set(stub shim.ChaincodeStubInterface, args []string) sc.
 		return shim.Error("Failed to set asset")
 	}
 	fmt.Printf("Transición insertada con éxito")
+
+	err2 := stub.PutState("lastKey",[]byte(args[0]))
+	if err2 != nil {
+		return shim.Error("Failed to set asset")
+	}
+	fmt.Printf("Last key actualizada con éxito")
 	return shim.Success(nil)
 }
 
