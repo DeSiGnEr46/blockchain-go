@@ -1,5 +1,5 @@
 # blockchain-go
 
-Chaincode desarrollado para Hyperledger Fabric por Oliver López Olmedo como parte del Trabajo de Fin de Máster.
+Chaincode developed by Oliver López Olmedo as part of his TFM at the University of Málaga.
 
-Basado en el ejemplo "fabcar" incluido en los 'fabric-samples' oficiales. 
+Based on the "fabcar" chaincode example included in Hyperledger Fabric "fabric-samples".
