@@ -1,9 +1,3 @@
-/*
- * Copyright IBM Corp All Rights Reserved
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 package main
 
 import (
@@ -18,7 +12,6 @@ import (
 	sc "github.com/hyperledger/fabric/protos/peer"
 )
 
-// SimpleAsset implements a simple chaincode to manage an asset
 type SmartContract struct {
 }
 
@@ -39,22 +32,18 @@ type Shipment struct {
 	FechaEnv string `json:"fechaenv"`
 }
 
-// Init is called during chaincode instantiation to initialize any
-// data. Note that chaincode upgrade also calls this function to reset
-// or to migrate data.
+// Init se llama cuando se instancia o actualiza un chaincode
 func (s *SmartContract) Init(stub shim.ChaincodeStubInterface) sc.Response {
 	//Only return success
 	return shim.Success(nil)
 }
 
-// Invoke is called per transaction on the chaincode. Each transaction is
-// either a 'get' or a 'set' on the asset created by Init function. The Set
-// method may create a new asset by specifying a new key-value pair.
+// Invoke se llama por cada interacción con el chaincode.
 func (s *SmartContract) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
-	// Extract the function and args from the transaction proposal
+	// Se extraen los argumentos enviados al chaincode
 	fn, args := stub.GetFunctionAndParameters()
-	// Route to the appropriate handler function to interact with the ledger appropriately
 
+	// Enruta a la función elegida
 	if fn == "set" {
 		return s.set(stub, args)
 	} else if fn == "getAll" {
@@ -63,14 +52,15 @@ func (s *SmartContract) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 		return s.get(stub, args)
 	} else if fn == "getHist" {
 		return s.getHistory(stub, args)
+	} else if fn == "edit" {
+		return s.edit(stub, args)
 	}
 
 	// Return the result as success payload
 	return shim.Error("Invalid Smart Contract function name.")
 }
 
-// Set stores the asset (both key and value) on the ledger. If the key exists,
-// it will override the value with the new one
+// Almacena un nuevo valor en el 'ledger'. Además, actualiza el valor de la 'lastKey'.
 func (s *SmartContract) set(stub shim.ChaincodeStubInterface, args []string) sc.Response {
 	if len(args) != 15 {
 		return shim.Error("Incorrect arguments. Expecting 13 arguments")
@@ -96,7 +86,28 @@ func (s *SmartContract) set(stub shim.ChaincodeStubInterface, args []string) sc.
 	return shim.Success(nil)
 }
 
-// Get returns the value of the specified asset key
+// Edita un valor del 'ledger' con una clave dada
+func (s *SmartContract) edit(stub shim.ChaincodeStubInterface, args []string) sc.Response {
+	if len(args) != 15 {
+		return shim.Error("Incorrect arguments. Expecting 13 arguments")
+	}
+
+	var shipment = Shipment{Producto: args[1], Modelo: args[2], Tipo: args[3], Dimensiones: args[4], FechaFabric: args[5],
+	Materiales: args[6], Descripcion: args[7], Cantidad: args[8], Precio_ud: args[9], Precio_total: args[10], EntOrg: args[11], EntDst: args[12], 
+	Orderer: args[13], FechaEnv: args[14]}
+	
+	shipAsBytes, _ := json.Marshal(shipment)
+
+	err := stub.PutState(args[0], shipAsBytes)
+	if err != nil {
+		return shim.Error("Failed to set asset")
+	}
+	fmt.Printf("Transición insertada con éxito")
+
+	return shim.Success(nil)
+}
+
+// Obtiene los valores asociados a una clave
 func (s *SmartContract) get(stub shim.ChaincodeStubInterface, args []string) sc.Response {
 	if len(args) != 1 {
 		return shim.Error("Incorrect arguments. Expecting a key")
@@ -110,7 +121,7 @@ func (s *SmartContract) get(stub shim.ChaincodeStubInterface, args []string) sc.
 	return shim.Success(shipAsBytes);
 }
 
-// Get returns the value of the specified asset key
+// Obtiene el historial de transacciones para una clave dada
 func (s *SmartContract) getHistory(stub shim.ChaincodeStubInterface, args []string) sc.Response {
 	if len(args) != 1 {
 		return shim.Error("Incorrect arguments. Expecting a key")
@@ -172,6 +183,7 @@ func (s *SmartContract) getHistory(stub shim.ChaincodeStubInterface, args []stri
 	return shim.Success(buffer.Bytes())
 }
 
+//Obtiene todos los valores para un rango de claves
 func (s *SmartContract) getAll(stub shim.ChaincodeStubInterface, args []string) sc.Response {
 	if len(args) != 2 {
 		return shim.Error("Incorrect arguments. Expecting a key")
@@ -219,7 +231,7 @@ func (s *SmartContract) getAll(stub shim.ChaincodeStubInterface, args []string) 
 	return shim.Success(buffer.Bytes())
 }
 
-// main function starts up the chaincode in the container during instantiate
+// Función que inicia el chaincode en el contenedor
 func main() {
 	if err := shim.Start(new(SmartContract)); err != nil {
 		fmt.Printf("Error starting SimpleAsset chaincode: %s", err)
