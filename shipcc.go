@@ -66,24 +66,31 @@ func (s *SmartContract) set(stub shim.ChaincodeStubInterface, args []string) sc.
 		return shim.Error("Incorrect arguments. Expecting 13 arguments")
 	}
 
-	var shipment = Shipment{Producto: args[1], Modelo: args[2], Tipo: args[3], Dimensiones: args[4], FechaFabric: args[5],
-	Materiales: args[6], Descripcion: args[7], Cantidad: args[8], Precio_ud: args[9], Precio_total: args[10], EntOrg: args[11], EntDst: args[12], 
-	Orderer: args[13], FechaEnv: args[14]}
-	
-	shipAsBytes, _ := json.Marshal(shipment)
+	result , err := stub.GetState(args[0])
+	if len(result) == 0 { //Si la longitud es 0 es porque no existe
+		//Se inserta
+		var shipment = Shipment{Producto: args[1], Modelo: args[2], Tipo: args[3], Dimensiones: args[4], FechaFabric: args[5],
+		Materiales: args[6], Descripcion: args[7], Cantidad: args[8], Precio_ud: args[9], Precio_total: args[10], EntOrg: args[11], EntDst: args[12], 
+		Orderer: args[13], FechaEnv: args[14]}
+		
+		shipAsBytes, _ := json.Marshal(shipment)
 
-	err := stub.PutState(args[0], shipAsBytes)
-	if err != nil {
-		return shim.Error("Failed to set asset")
-	}
-	fmt.Printf("Transición insertada con éxito")
+		err := stub.PutState(args[0], shipAsBytes)
+		if err != nil {
+			return shim.Error("Failed to set asset")
+		}
+		fmt.Printf("Transición insertada con éxito")
 
-	err2 := stub.PutState("lastKey",[]byte(args[0]))
-	if err2 != nil {
-		return shim.Error("Failed to set asset")
+		err2 := stub.PutState("lastKey",[]byte(args[0]))
+		if err2 != nil {
+			return shim.Error("Failed to set lastKey")
+		}
+		fmt.Printf("Last key actualizada con éxito")
+		return shim.Success(nil)
+	} else {
+		fmt.Printf("Asset already exists")
+		return shim.Error(err.Error())
 	}
-	fmt.Printf("Last key actualizada con éxito")
-	return shim.Success(nil)
 }
 
 // Edita un valor del 'ledger' con una clave dada
